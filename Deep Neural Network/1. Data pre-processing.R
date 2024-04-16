@@ -1,21 +1,10 @@
 # Pre-process the data for deep neural network cross validation
-# Load in the libraries
+
+## ---- Libraries ----
 library(dplyr)
 library(tidymodels)
 library(groupdata2)
 library(keras)
-
-
-library(vip)
-
-library(rBayesianOptimization)
-library(caret)
-library(tensorflow)
-library(kernelshap)
-library(shapviz)
-library(str2str)
-library(pROC)
-
 
 ## ---- Setting up data ---- 
 
