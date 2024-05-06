@@ -1,4 +1,4 @@
-# Hyperparameter tuning
+# Hyperparameter tuning (RNN)
 
 ## ---- Libraries ----
 library(dplyr)
