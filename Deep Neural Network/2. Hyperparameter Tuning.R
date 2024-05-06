@@ -1,4 +1,4 @@
-# Cross validation of thee and four hidden layer DNN
+# Hyperparameter tuning of thee and four hidden layer DNN
 
 ## ---- Libraries ----
 library(dplyr)
