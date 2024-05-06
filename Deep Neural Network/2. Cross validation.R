@@ -5,18 +5,6 @@ library(dplyr)
 library(tidymodels)
 library(tensorflow)
 
-
-library(tidymodels)
-library(vip)
-library(keras)
-library(rBayesianOptimization)
-library(caret)
-
-library(kernelshap)
-library(shapviz)
-library(str2str)
-library(pROC)
-
 ## ---- Create grid of all the hyperparameters ----
 ## three layer random search
 regrate<-c(1e-6,1e-5,1e-4)
@@ -39,6 +27,8 @@ grid.search.subset<-grid.search.full[x,]
 # Create vectors to store validation loss and best epoch in
 val_loss_3layer<-matrix(nrow=20,ncol=5)
 best_epoch_3layer<-matrix(nrow=20,ncol=5)
+
+## Do this for 1:10 then 11:20 cus it takes too long on its own
 
 for(i in 1:20){
   for(fold in 1:5){
