@@ -5,6 +5,8 @@ library(dplyr)
 library(tidymodels)
 library(groupdata2)
 library(keras)
+library(str2str)
+library(caret)
 
 ## ---- Setting up data ---- 
 
