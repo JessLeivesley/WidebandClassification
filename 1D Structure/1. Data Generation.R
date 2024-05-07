@@ -1,4 +1,4 @@
-# Pre-process the data for deep neural network cross validation
+# Data generation for DNN, 1D CNN, and ResNet
 
 ## ---- Libraries ----
 library(dplyr)
