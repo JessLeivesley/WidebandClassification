@@ -166,7 +166,8 @@ for (i in 1:10){
       x_train_set, y_train_set[,c(1:2)],
       batch_size = grid.search.subset$batch_size[i],
       epochs = 75,
-      validation_data = list(x_val_set, y_val_set[,c(1:2)])
+      validation_data = list(x_val_set, y_val_set[,c(1:2)]),
+      class_weight = list("0"=1,"1"=cw))
     )
     
     val_loss[i,fold]<-min(resnet_history$metrics$val_loss)
