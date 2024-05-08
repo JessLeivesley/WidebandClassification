@@ -46,8 +46,8 @@ add_batch_normalization <- function(input_layer, batch_normalization) {
 filters <- c(16, 32, 64)
 kernel_size <- c(3, 5, 7)
 leaky_relu <- c(T, F)
-batch_normalization <- c(F)
-batch_size <- c(1000)
+batch_normalization <- c(T, F)
+batch_size <- c(500, 800, 1000, 1200, 1500)
 
 # expand the grid so that every possible combination of the above parameters is present. 
 # creating every possible combination to test
@@ -58,8 +58,14 @@ grid.search.full<-expand.grid(filters = filters, kernel_size = kernel_size,
 
 set.seed(15)
 # x<-sample(1:45,20,replace=F) # 45 = size of grid search (num of row)
-x<-sample(1:nrow(grid.search.full),nrow(grid.search.full),replace=F)
+n_subset <- 20
+x<-sample(1:nrow(grid.search.full), n_subset,replace=F)
 grid.search.subset<-grid.search.full[x,]
+
+val_loss<-matrix(nrow=n_subset,ncol=5)
+best_epoch_loss<-matrix(nrow=n_subset,ncol=5)
+val_auc<-matrix(nrow=n_subset,ncol=5)
+best_epoch_auc<-matrix(nrow=n_subset,ncol=5)
 
 ## ---- Run Search ----
 # Run in two groups for memory (faster this way)
