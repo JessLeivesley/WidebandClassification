@@ -25,9 +25,10 @@ for(fold in 1:1){
 
 
 # below need to be extracted and inputted as values so only need to change this line everytime we have new optimal values
-best_param=tibble(filters = 32, kernel_size = 7, leaky_relu = F, batch_normalization = F, batch_size = 1000)
-# best loss: 32, 7, t/f, f, 1000
-# best auc: 64, 7, f, f, 1000
+best_param=tibble(filters = 16, kernel_size = 5, leaky_relu = T, batch_normalization = F, batch_size = 1200)
+# best loss: 16, 5, t, f, 1200
+# best epoch: 29
+# got acc 83.59 (82.13 balanced)
 
 
 input_shape <- c(249,1)
