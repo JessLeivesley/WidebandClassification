@@ -77,22 +77,13 @@ x_train[,4:252]<-x_train[,4:252]+10*log10(450/train$totalLength)
 
 # Transform from TS to acoustic backscatter
 x_train[,4:252]<-exp(x_train[,4:252]/10)
-
-# scale 
-x_train<-x_train%>%scale()
-
 x_train<-as.matrix(x_train)
-
-# save the scale attributes so that they can be applied to new data or testing data
-xmean<-attributes(x_train)$`scaled:center`
-xsd<-attributes(x_train)$`scaled:scale`
 
 # Do the same for the test data
 x_test <- test %>% 
   select(c(21,23,24,52:300))
 x_test[,4:252]<-x_test[,4:252]+10*log10(450/test$totalLength)
 x_test[,4:252]<-exp(x_test[,4:252]/10)
-x_test<-x_test%>%scale(xmean,xsd)
 x_test<-as.matrix(x_test)
 
 # add folds to x matrix and y data
