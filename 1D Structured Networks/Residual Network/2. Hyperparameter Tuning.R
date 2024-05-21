@@ -73,6 +73,7 @@ best_epoch_auc<-matrix(nrow=n_subset,ncol=5)
 for (i in 1:10){
   for (fold in 1:5){
     print(grid.search.subset[i,])
+    print(sprintf("Processing i #%d", i))
     print(sprintf("Processing Fold #%d", fold))
     
     x_train_set<-x_train[x_train[,250] != fold,]

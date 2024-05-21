@@ -6,9 +6,14 @@ library(tidymodels)
 library(tensorflow)
 library(caret)
 
+metrics<-data.frame(matrix(ncol = 4, nrow = 5))
+colnames(metrics)<-c('Test Loss', 'Sensitivity', 'Specificity', 'AUC')
+
+resnet_history <- list()
+
 ## ---- Fit the best model 5 times ----
 
-for(fold in 1:1){
+for(fold in 1:5){
   x_train_set<-x_train[x_train[,250] != fold,]
   y_train_set<-dummy_y_train_S[dummy_y_train_S[,3]!=fold,]
   
@@ -111,22 +116,23 @@ for(fold in 1:1){
   )
   
   # Fit model (just resnet)
-  resnet_history <- model %>% fit(
+  resnet_history[[fold]] <- model %>% fit(
     x_train_set, y_train_set[,c(1:2)],
     batch_size = best_param$batch_size,
     epochs = 100,
     validation_data = list(x_val_set, y_val_set[,c(1:2)]),
     class_weight = list("0"=1,"1"=cw)
   )
+  
+  eval <- evaluate(model, (x_test), dummy_y_test)
+  preds<-predict(model, x=x_test)
+  
+  species.predictions<-apply(preds,1,which.max)
+  species.predictions<-as.factor(ifelse(species.predictions == 1, "LT", "SMB"))
+  cm <- confusionMatrix(species.predictions,as.factor(test$species))
+  auc_value <- eval[grepl("auc", names(eval))]
+  metrics[fold, ] <- c(eval[['loss']], cm$byClass['Sensitivity'], cm$byClass['Specificity'], auc_value)
 }
 
-## edit to extract test loss, test sensitivity, test specificity, test auc
-plot(resnet_history)
+print(metrics)
 
-
-evaluate(model, (x_test), dummy_y_test)
-preds<-predict(model, x=x_test)
-
-species.predictions<-apply(preds,1,which.max)
-species.predictions<-as.factor(ifelse(species.predictions == 1, "LT", "SMB"))
-confusionMatrix(species.predictions,as.factor(test$species))
