@@ -84,10 +84,8 @@ for (i in 1:10){
     
     cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
     
-    # Scaling within the loop
-    scaler <- preProcess(x_train_set[,1:249], method = 'scale')
-    x_train_set <- predict(scaler, x_train_set[,1:249])
-    x_val_set <- predict(scaler, x_val_set[,1:249])
+    x_train_set <- x_train_set[,1:249]
+    x_val_set <- x_val_set[,1:249]
     
     input_shape <- c(249,1)
     set_random_seed(15)
@@ -202,10 +200,8 @@ for (i in 11:20){
     
     cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
     
-    # Scaling within the loop
-    scaler <- preProcess(x_train_set[,1:249], method = 'scale')
-    x_train_set <- predict(scaler, x_train_set[,1:249])
-    x_val_set <- predict(scaler, x_val_set[,1:249])
+    x_train_set <- x_train_set[,1:249]
+    x_val_set <- x_val_set[,1:249]
     
     input_shape <- c(249,1)
     set_random_seed(15)
@@ -278,8 +274,6 @@ for (i in 11:20){
       layer_dense(2, activation="sigmoid")
     
     model <- keras_model(inputs, outputs)
-    #model
-    #plot(model,show_shapes = T)
     
     model %>% compile(
       optimizer = optimizer_adam(),

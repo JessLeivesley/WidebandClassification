@@ -22,12 +22,8 @@ for(fold in 1:5){
   
   cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
   
-  # Scaling
-  scaler <- preProcess(x_train_set[,1:249], method = 'scale')
-  x_train_set <- predict(scaler, x_train_set[,1:249])
-  x_val_set <- predict(scaler, x_val_set[,1:249])
-  
-  
+  x_train_set <- x_train_set[,1:249]
+  x_val_set <- x_val_set[,1:249]
   
   # below need to be extracted and inputted as values so only need to change this line everytime we have new optimal values
   best_param=tibble(filters = 16, kernel_size = 5, leaky_relu = T, batch_normalization = F, batch_size = 1200)
