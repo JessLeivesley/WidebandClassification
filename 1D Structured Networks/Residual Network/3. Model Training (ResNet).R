@@ -29,6 +29,7 @@ for(fold in 1:5){
   best_param=tibble(filters = 16, kernel_size = 5, leaky_relu = T, batch_normalization = F, batch_size = 1200)
   # best loss: 16, 5, t, f, 1200
   # best epoch: 29
+  # got acc 83.59 (82.13 balanced)
   
   
   input_shape <- c(249,1)
@@ -114,7 +115,7 @@ for(fold in 1:5){
   resnet_history[[fold]] <- model %>% fit(
     x_train_set, y_train_set[,c(1:2)],
     batch_size = best_param$batch_size,
-    epochs = 29,
+    epochs = 100,
     validation_data = list(x_val_set, y_val_set[,c(1:2)]),
     class_weight = list("0"=1,"1"=cw)
   )
