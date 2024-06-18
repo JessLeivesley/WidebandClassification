@@ -1,106 +1,81 @@
-# Data generation for DNN, 1D CNN, and ResNet
-
-## ---- Libraries ----
+## Load in the necessary libraries
 library(dplyr)
-library(tidymodels)
-library(groupdata2)
+library(tidyr)
 library(keras)
+library(tidymodels)
+library(caret)
+library(tensorflow)
 
-## ---- Setting up data ---- 
-
-# Load in data
+# Load in the dataset
 load("Data/processed_AnalysisData_no200.Rdata")
 
-#rename to make typing it easier
-processed_data<-processed_data_no200
+processed_data <- processed_data_no200
 
-# Remove individuals with missing transducers
-processed_data<-processed_data%>%filter(is.na(F100)==F)
+processed_data%>%group_by(spCode,fishNum)%>%count()
 
-# Remove the two missing frequency columns
-processed_data<-processed_data%>%select(-F90)
-processed_data<-processed_data%>%select(-F90.5)
+processed_data <- processed_data %>% filter(is.na(F100) == F)
+processed_data <- processed_data %>% filter(fishNum != "LWF23018")
+processed_data <- processed_data %>% select(-F90, -F90.5)
+processed_data <- processed_data %>% filter(spCode == "81" | spCode == "316")
+processed_data$species <- ifelse(processed_data$spCode == 81, "LT", "SMB")
+processed_data <- processed_data %>% filter(is.na(aspectAngle) == F & is.na(Angle_major_axis) == F & is.na(Angle_minor_axis) == F)
+processed_data <- processed_data %>% filter(F100 > -1000)
 
-# Include only Lake Trout and Smallmouth Bass individuals
-processed_data<-processed_data%>%filter(spCode == "81" |spCode == "316")
-
-# Create species label column
-processed_data$species<-ifelse(processed_data$spCode==81, "LT","SMB")
-
-# Remove missing values
-processed_data<-processed_data%>%filter(is.na(aspectAngle)==F & is.na(Angle_major_axis)==F)
-
-# Remove one outlier
-processed_data<-processed_data%>%filter(F100>-1000)
-
-## ---- Create train/test split ----
+# Split into training/validation/test set
 set.seed(73)
-split<-group_initial_split(processed_data,group=fishNum,strata = species, prop=0.85)
-train<-training(split)
-test<-testing(split)
+split <- group_initial_split(processed_data, group = fishNum, strata = species, prop = 0.7)
+train <- training(split)
+val_test <- testing(split)
+split2 <- group_initial_split(val_test, group = fishNum, strata = species, prop = 0.5)
+validate <- training(split2)
+test <- testing(split2)
 
-# Check how balanced the datasets are (roughly 2.1-2.2 times more LT than SMB)
-train%>%group_by(species)%>%count() 
-test%>%group_by(species)%>%count() 
+# Check the dataset set
+train%>%group_by(species)%>%count()
+validate%>%group_by(species)%>%count()
+test%>%group_by(species)%>%count()
 
-## ---- Create cross validation folds ----
+# Dummy encode y data
+train$y <- ifelse(train$species == "LT", 0, 1)
+dummy_y_train <- to_categorical(train$y, num_classes = 2)
+test$y <- ifelse(test$species == "LT", 0, 1)
+dummy_y_test <- to_categorical(test$y, num_classes = 2)
+validate$y <- ifelse(validate$species == "LT", 0, 1)
+dummy_y_val <- to_categorical(validate$y, num_classes = 2)
 
-# Transform fishNum (unique fish ID) from a character to a factor
-train$fishNum<-as.factor(train$fishNum)
-
-set.seed(15)
-train.cv <- groupdata2::fold(train, k = 5, cat_col = 'species', id_col = 'fishNum')
-train.cv$`.folds`
-
-## ---- Dummy encode y variable ----
-train$y<-NA
-train$y[train$species=="LT"]<-0
-train$y[train$species=="SMB"]<-1
-summary(train$y)
-dummy_y_train<-to_categorical(train$y, num_classes = 2)
-
-
-test$y<-NA
-test$y[test$species=="LT"]<-0
-test$y[test$species=="SMB"]<-1
-summary(test$y)
-dummy_y_test<-to_categorical(test$y, num_classes = 2)
-
-## ---- Create x data matrices and normalize data----
-
-# select the positional data (cols 21,23,24) and the TS data (cols 52:300)
-x_train <- train %>% 
-  select(c(21,23,24,52:300))
-
-# Adjust TS values to a set fish length
-x_train[,4:252]<-x_train[,4:252]+10*log10(450/train$totalLength)
-
-# Transform from TS to acoustic backscatter
-x_train[,4:252]<-exp(x_train[,4:252]/10)
-
-# scale 
+# Transform and standardize training data 
+x_train <- train %>% select(52:300)
+x_train<-x_train+10*log10(450/train$totalLength)
+x_train<-exp(x_train/10)
 x_train<-x_train%>%scale()
-
 x_train<-as.matrix(x_train)
 
-# save the scale attributes so that they can be applied to new data or testing data
+# Save the mean and sd to apply to the validation and test set
 xmean<-attributes(x_train)$`scaled:center`
 xsd<-attributes(x_train)$`scaled:scale`
 
-# Do the same for the test data
-x_test <- test %>% 
-  select(c(21,23,24,52:300))
-x_test[,4:252]<-x_test[,4:252]+10*log10(450/test$totalLength)
-x_test[,4:252]<-exp(x_test[,4:252]/10)
+# Transform and standardize validation data 
+x_validate <- validate %>% select(52:300)
+x_validate<-x_validate+10*log10(450/validate$totalLength)
+x_validate<-exp(x_validate/10)
+x_validate<-x_validate%>%scale(xmean,xsd)
+x_validate<-as.matrix(x_validate)
+
+# Transform and standardize training data 
+x_test <- test %>% select(52:300)
+x_test<-x_test+10*log10(450/test$totalLength)
+x_test<-exp(x_test/10)
 x_test<-x_test%>%scale(xmean,xsd)
 x_test<-as.matrix(x_test)
 
-# add folds to x matrix and y data
-x_train<-cbind(x_train,train.cv$`.folds`)
-dummy_y_train<-cbind(dummy_y_train,train.cv$.folds)
-
-## Shuffle training data
+# Shuffle training data
 set.seed(250)
-x<-sample(1:nrow(x_train))
-x_train_S= x_train[x, ] 
-dummy_y_train_S= dummy_y_train[x, ] 
+train_indices <- sample(1:nrow(x_train))
+x_train <- x_train[train_indices, ] 
+dummy_y_train <- dummy_y_train[train_indices, ] 
+
+# Shuffle validation data
+set.seed(250)
+val_indices <- sample(1:nrow(x_validate))
+x_validate <- x_validate[val_indices, ] 
+dummy_y_val <- dummy_y_val[val_indices, ]
