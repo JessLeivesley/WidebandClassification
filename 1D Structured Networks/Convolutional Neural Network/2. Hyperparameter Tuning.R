@@ -8,15 +8,6 @@ library(caret)
 library(rsample)
 library(keras)
 
-## ---- Data set up ----
-# Remove the positional variables from the data sets generated in 1. Data Generation
-
-x_train <- as.data.frame(x_train_S)%>%select(-aspectAngle, -Angle_minor_axis,-Angle_major_axis)
-x_test <- as.data.frame(x_test)%>%select(-aspectAngle, -Angle_minor_axis,-Angle_major_axis)
-
-x_train<-as.matrix(x_train)
-x_test<-as.matrix(x_test)
-
 ## ---- Grid Search ----
 # create grid of parameter space we want to search
 filters <- c(2, 4, 8, 16)
@@ -42,43 +33,26 @@ grid.search.full<-expand.grid(filters = filters, kernel_size = kernel_size, mult
                               regularizer_weight = regularizer_weight)
 
 set.seed(15)
-# x<-sample(1:45,20,replace=F) # 45 = size of grid search (num of row)
 n_subset <- 20
 x<-sample(1:nrow(grid.search.full), n_subset,replace=F)
 grid.search.subset<-grid.search.full[x,]
 
-val_loss<-matrix(nrow=n_subset,ncol=5)
-best_epoch_loss<-matrix(nrow=n_subset,ncol=5)
-val_auc<-matrix(nrow=n_subset,ncol=5)
-best_epoch_auc<-matrix(nrow=n_subset,ncol=5)
+val_loss<-rep(NA,20)
+best_epoch_loss<-rep(NA,20)
+val_auc<-rep(NA,20)
+best_epoch_auc<-rep(NA,20)
 
 ## ---- Run Search ----
 # Run in two groups for memory (faster this way)
+
+# Class weight calculation to account for imbalanced data
+cw<-summary(as.factor(dummy_y_train[,1]))[2]/summary(as.factor(dummy_y_train[,1]))[1]
+
 for (i in 1:10){
-  for (fold in 1:5){
-    print(grid.search.subset[i,])
-    print(sprintf("Processing Fold #%d", fold))
+    print(sprintf("Processing Model #%d", i))
 
-    x_train_set<-x_train[x_train[,250] != fold,]
-    y_train_set<-dummy_y_train_S[dummy_y_train_S[,3]!=fold,]
-
-    x_val_set<-x_train[x_train[,250] == fold,]
-    y_val_set<-dummy_y_train_S[dummy_y_train_S[,3]==fold,]
-
-    cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
-
-    # Scaling within the loop
-    scaler <- preProcess(x_train_set[,1:249], method = 'scale')
-    x_train_set <- predict(scaler, x_train_set[,1:249])
-    x_val_set <- predict(scaler, x_val_set[,1:249])
-
-    
-    # x_train_set<-x_train[fold[[fold]],,]
-    # y_train_set<-dummy_y_train[fold[[fold]],]
-    # 
-    # x_val_set<-x_train[-fold[[fold]],,]
-    # y_val_set<-dummy_y_train[-fold[[fold]],]
     set_random_seed(15)
+    
     cnn = keras_model_sequential()
     #model
     cnn %>% 
@@ -115,43 +89,24 @@ for (i in 1:10){
       metrics = c("accuracy", tf$keras$metrics$AUC())
     )
     
-    # Fit model (just resnet)
+    # Fit model
     cnn_history <- cnn %>% fit(
-      x_train_set, y_train_set[,c(1:2)],
+      x_train, dummy_y_train[,c(1:2)],
       batch_size = grid.search.subset$batch_size[i],
       epochs = 50,
-      validation_data = list(x_val_set, y_val_set[,c(1:2)]),
+      validation_data = list(x_validate, dummy_y_val[,c(1:2)]),
       class_weight = list("0"=1,"1"=cw)
     )
     
-    val_loss[i,fold]<-min(cnn_history$metrics$val_loss)
-    best_epoch_loss[i,fold]<-which(cnn_history$metrics$val_loss==min(cnn_history$metrics$val_loss))
-    val_auc[i,fold] <- max(cnn_history$metrics$val_auc)
-    best_epoch_auc[i,fold]<-which(cnn_history$metrics$val_auc==max(cnn_history$metrics$val_auc))
-    
-    print(i)
-    print(fold)
-    
+    val_loss[i]<-min(cnn_history$metrics$val_loss)
+    best_epoch_loss[i]<-which(cnn_history$metrics$val_loss==min(cnn_history$metrics$val_loss))
+    val_auc[i] <- max(cnn_history$metrics$val_auc)
+    best_epoch_auc[i]<-which(cnn_history$metrics$val_auc==max(cnn_history$metrics$val_auc))
+  
   }
-}
 
 for (i in 11:20){
-  for (fold in 1:5){
-    print(grid.search.subset[i,])
-    print(sprintf("Processing Fold #%d", fold))
-    
-    x_train_set<-x_train[x_train[,250] != fold,]
-    y_train_set<-dummy_y_train_S[dummy_y_train_S[,3]!=fold,]
-    
-    x_val_set<-x_train[x_train[,250] == fold,]
-    y_val_set<-dummy_y_train_S[dummy_y_train_S[,3]==fold,]
-    
-    cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
-    
-    # Scaling within the loop
-    scaler <- preProcess(x_train_set[,1:249], method = 'scale')
-    x_train_set <- predict(scaler, x_train_set[,1:249])
-    x_val_set <- predict(scaler, x_val_set[,1:249])
+    print(sprintf("Processing Model #%d", i))
     
     set_random_seed(15)
     cnn = keras_model_sequential()
@@ -190,12 +145,12 @@ for (i in 11:20){
       metrics = c("accuracy", tf$keras$metrics$AUC())
     )
     
-    # Fit model (just resnet)
+    # Fit model
     cnn_history <- cnn %>% fit(
-      x_train_set, y_train_set[,c(1:2)],
+      x_train, dummy_y_train[,c(1:2)],
       batch_size = grid.search.subset$batch_size[i],
       epochs = 50,
-      validation_data = list(x_val_set, y_val_set[,c(1:2)]),
+      validation_data = list(x_validate, dummy_y_val[,c(1:2)]),
       class_weight = list("0"=1,"1"=cw)
     )
     
@@ -205,10 +160,7 @@ for (i in 11:20){
     best_epoch_auc[i,fold]<-which(cnn_history$metrics$val_auc==max(cnn_history$metrics$val_auc))
     
     print(i)
-    print(fold)
-    
   }
-}
 
 ## ---- Find the best parameters ----
 which(rowMeans(val_loss)==min(rowMeans(val_loss)))
