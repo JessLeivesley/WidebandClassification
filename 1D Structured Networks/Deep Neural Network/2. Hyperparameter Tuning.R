@@ -25,24 +25,18 @@ grid.search.subset<-grid.search.full[x,]
 
 ## ---- Cross validation of 3 hidden layer models ----
 # Create vectors to store validation loss and best epoch in
-val_loss_3layer<-matrix(nrow=20,ncol=5)
-best_epoch_3layer<-matrix(nrow=20,ncol=5)
+val_loss_3layer<-rep(NA,20)
+best_epoch_3layer<-rep(NA,20)
 
 ## Do this for 1:10 then 11:20 because it takes too long on its own
+cw<-summary(as.factor(dummy_y_train[,1]))[2]/summary(as.factor(dummy_y_train[,1]))[1]
+
 for(i in 1:10){
-  for(fold in 1:5){
-    x_train_set<-x_train_S[x_train_S[,253] != fold,]
-    y_train_set<-dummy_y_train_S[dummy_y_train_S[,3]!=fold,]
-    
-    x_val_set<-x_train_S[x_train_S[,253] == fold,]
-    y_val_set<-dummy_y_train_S[dummy_y_train_S[,3]==fold,]
-    
-    cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
-    ## You will need to edit the model here depending on the number of layers you are fitting
+  print(sprintf("Processing Model #%d", i))
     set_random_seed(15)
     model1 <- keras_model_sequential()
     model1 %>%
-      layer_dense(units = grid.search.subset$neuron1[i], input_shape = c(252),activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
+      layer_dense(units = grid.search.subset$neuron1[i], input_shape = c(249),activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
       layer_activation_leaky_relu()%>%
       layer_dropout(grid.search.subset$dropout[i])%>%
       layer_dense(units = grid.search.subset$neuron2[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
@@ -58,60 +52,48 @@ for(i in 1:10){
       metrics = c('accuracy'))
     
     history <- model1 %>% fit(
-      x_train_set[,c(1:252)], y_train_set[,c(1:2)],
+      x_train, dummy_y_train,
       batch_size = 500, 
-      epochs = 200,
-      validation_data = list(x_val_set[,c(1:252)],y_val_set[,c(1:2)]),
+      epochs = 75,
+      validation_data = list(x_validate,dummy_y_val),
       class_weight = list("0"=1,"1"=cw))
     
-    val_loss_3layer[i,fold]<-min(history$metrics$val_loss)
-    best_epoch_3layer[i,fold]<-which(history$metrics$val_loss==min(history$metrics$val_loss))
-    
-    print(i)
-    print(fold)
-  }}
+    val_loss_3layer[i]<-min(history$metrics$val_loss)
+    best_epoch_3layer[i]<-which(history$metrics$val_loss==min(history$metrics$val_loss))
+
+  }
 
 for(i in 11:20){
-  for(fold in 1:5){
-    x_train_set<-x_train_S[x_train_S[,253] != fold,]
-    y_train_set<-dummy_y_train_S[dummy_y_train_S[,3]!=fold,]
-    
-    x_val_set<-x_train_S[x_train_S[,253] == fold,]
-    y_val_set<-dummy_y_train_S[dummy_y_train_S[,3]==fold,]
-    
-    cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
-    ## You will need to edit the model here depending on the number of layers you are fitting
-    set_random_seed(15)
-    model1 <- keras_model_sequential()
-    model1 %>%
-      layer_dense(units = grid.search.subset$neuron1[i], input_shape = c(252),activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
-      layer_activation_leaky_relu()%>%
-      layer_dropout(grid.search.subset$dropout[i])%>%
-      layer_dense(units = grid.search.subset$neuron2[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
-      layer_activation_leaky_relu()%>%
-      layer_dropout(grid.search.subset$dropout[i])%>%
-      layer_dense(units = grid.search.subset$neuron3[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
-      layer_activation_leaky_relu()%>%
-      layer_dense(units = 2, activation = "sigmoid")
-    
-    model1 %>% compile(
-      loss = 'binary_crossentropy',
-      optimizer =  optimizer_adam(3e-4),
-      metrics = c('accuracy'))
-    
-    history <- model1 %>% fit(
-      x_train_set[,c(1:252)], y_train_set[,c(1:2)],
-      batch_size = 500, 
-      epochs = 200,
-      validation_data = list(x_val_set[,c(1:252)],y_val_set[,c(1:2)]),
-      class_weight = list("0"=1,"1"=cw))
-    
-    val_loss_3layer[i,fold]<-min(history$metrics$val_loss)
-    best_epoch_3layer[i,fold]<-which(history$metrics$val_loss==min(history$metrics$val_loss))
-    
-    print(i)
-    print(fold)
-  }}
+  print(sprintf("Processing Model #%d", i))
+  set_random_seed(15)
+  model1 <- keras_model_sequential()
+  model1 %>%
+    layer_dense(units = grid.search.subset$neuron1[i], input_shape = c(249),activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
+    layer_activation_leaky_relu()%>%
+    layer_dropout(grid.search.subset$dropout[i])%>%
+    layer_dense(units = grid.search.subset$neuron2[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
+    layer_activation_leaky_relu()%>%
+    layer_dropout(grid.search.subset$dropout[i])%>%
+    layer_dense(units = grid.search.subset$neuron3[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
+    layer_activation_leaky_relu()%>%
+    layer_dense(units = 2, activation = "sigmoid")
+  
+  model1 %>% compile(
+    loss = 'binary_crossentropy',
+    optimizer =  optimizer_adam(3e-4),
+    metrics = c('accuracy'))
+  
+  history <- model1 %>% fit(
+    x_train, dummy_y_train,
+    batch_size = 500, 
+    epochs = 75,
+    validation_data = list(x_validate,dummy_y_val),
+    class_weight = list("0"=1,"1"=cw))
+  
+  val_loss_3layer[i]<-min(history$metrics$val_loss)
+  best_epoch_3layer[i]<-which(history$metrics$val_loss==min(history$metrics$val_loss))
+  
+  }
 
 
 # Summarise the validation loss for each of the 20 models
@@ -136,24 +118,16 @@ grid.search.subset<-grid.search.full[x,]
 
 ## ---- Cross validation of 4 hidden layer models ----
 # Create vectors to store validation loss and best epoch in
-val_loss_4layer<-matrix(nrow=20,ncol=5)
-best_epoch_4layer<-matrix(nrow=20,ncol=5)
+val_loss_4layer<-rep(NA,20)
+best_epoch_4layer<-rep(NA,20)
 
 ## Do this for 1:10 then 11:20 because it takes too long on its own
 for(i in 1:10){
-  for(fold in 1:5){
-    x_train_set<-x_train_S[x_train_S[,253] != fold,]
-    y_train_set<-dummy_y_train_S[dummy_y_train_S[,3]!=fold,]
-    
-    x_val_set<-x_train_S[x_train_S[,253] == fold,]
-    y_val_set<-dummy_y_train_S[dummy_y_train_S[,3]==fold,]
-    
-    cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
-    
+  print(sprintf("Processing Model #%d", i))
     set_random_seed(15)
     model1 <- keras_model_sequential()
     model1 %>%
-      layer_dense(units = grid.search.subset$neuron1[i], input_shape = c(252),activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
+      layer_dense(units = grid.search.subset$neuron1[i], input_shape = c(249),activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
       layer_activation_leaky_relu()%>%
       layer_dropout(grid.search.subset$dropout[i])%>%
       layer_dense(units = grid.search.subset$neuron2[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
@@ -172,57 +146,49 @@ for(i in 1:10){
       metrics = c('accuracy'))
     
     history <- model1 %>% fit(
-      x_train_set[,c(1:252)], y_train_set[,c(1:2)],
+      x_train, dummy_y_train,
       batch_size = 500, 
-      epochs = 100,
-      validation_data = list(x_val_set[,c(1:252)],y_val_set[,c(1:2)]),
+      epochs = 75,
+      validation_data = list(x_validate,dummy_y_val),
       class_weight = list("0"=1,"1"=cw))
     
-    val_loss_4layer[i,fold]<-min(history$metrics$val_loss)
-    best_epoch_4layer[i,fold]<-which(history$metrics$val_loss==min(history$metrics$val_loss))
-  }}
+    val_loss_4layer[i]<-min(history$metrics$val_loss)
+    best_epoch_4layer[i]<-which(history$metrics$val_loss==min(history$metrics$val_loss))
+  }
 
 for(i in 11:20){
-  for(fold in 1:5){
-    x_train_set<-x_train_S[x_train_S[,253] != fold,]
-    y_train_set<-dummy_y_train_S[dummy_y_train_S[,3]!=fold,]
-    
-    x_val_set<-x_train_S[x_train_S[,253] == fold,]
-    y_val_set<-dummy_y_train_S[dummy_y_train_S[,3]==fold,]
-    
-    cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
-    
-    set_random_seed(15)
-    model1 <- keras_model_sequential()
-    model1 %>%
-      layer_dense(units = grid.search.subset$neuron1[i], input_shape = c(252),activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
-      layer_activation_leaky_relu()%>%
-      layer_dropout(grid.search.subset$dropout[i])%>%
-      layer_dense(units = grid.search.subset$neuron2[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
-      layer_activation_leaky_relu()%>%
-      layer_dropout(grid.search.subset$dropout[i])%>%
-      layer_dense(units = grid.search.subset$neuron3[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
-      layer_activation_leaky_relu()%>%
-      layer_dropout(grid.search.subset$dropout[i])%>%
-      layer_dense(units = grid.search.subset$neuron4[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
-      layer_activation_leaky_relu()%>%
-      layer_dense(units = 2, activation = "sigmoid")
-    
-    model1 %>% compile(
-      loss = 'binary_crossentropy',
-      optimizer =  optimizer_adam(3e-4),
-      metrics = c('accuracy'))
-    
-    history <- model1 %>% fit(
-      x_train_set[,c(1:252)], y_train_set[,c(1:2)],
-      batch_size = 500, 
-      epochs = 100,
-      validation_data = list(x_val_set[,c(1:252)],y_val_set[,c(1:2)]),
-      class_weight = list("0"=1,"1"=cw))
-    
-    val_loss_4layer[i,fold]<-min(history$metrics$val_loss)
-    best_epoch_4layer[i,fold]<-which(history$metrics$val_loss==min(history$metrics$val_loss))
-  }}
+  print(sprintf("Processing Model #%d", i))
+  set_random_seed(15)
+  model1 <- keras_model_sequential()
+  model1 %>%
+    layer_dense(units = grid.search.subset$neuron1[i], input_shape = c(249),activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
+    layer_activation_leaky_relu()%>%
+    layer_dropout(grid.search.subset$dropout[i])%>%
+    layer_dense(units = grid.search.subset$neuron2[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
+    layer_activation_leaky_relu()%>%
+    layer_dropout(grid.search.subset$dropout[i])%>%
+    layer_dense(units = grid.search.subset$neuron3[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
+    layer_activation_leaky_relu()%>%
+    layer_dropout(grid.search.subset$dropout[i])%>%
+    layer_dense(units = grid.search.subset$neuron4[i],activity_regularizer = regularizer_l2(l=grid.search.subset$regrate[i])) %>%
+    layer_activation_leaky_relu()%>%
+    layer_dense(units = 2, activation = "sigmoid")
+  
+  model1 %>% compile(
+    loss = 'binary_crossentropy',
+    optimizer =  optimizer_adam(3e-4),
+    metrics = c('accuracy'))
+  
+  history <- model1 %>% fit(
+    x_train, dummy_y_train,
+    batch_size = 500, 
+    epochs = 75,
+    validation_data = list(x_validate,dummy_y_val),
+    class_weight = list("0"=1,"1"=cw))
+  
+  val_loss_4layer[i]<-min(history$metrics$val_loss)
+  best_epoch_4layer[i]<-which(history$metrics$val_loss==min(history$metrics$val_loss))
+  }
 
 
 # Summarise the validation loss for each of the 20 models
