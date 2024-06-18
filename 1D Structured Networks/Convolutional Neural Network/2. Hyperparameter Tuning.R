@@ -149,7 +149,7 @@ for (i in 11:20){
     cnn_history <- cnn %>% fit(
       x_train, dummy_y_train[,c(1:2)],
       batch_size = grid.search.subset$batch_size[i],
-      epochs = 50,
+      epochs = 100,
       validation_data = list(x_validate, dummy_y_val[,c(1:2)]),
       class_weight = list("0"=1,"1"=cw)
     )
