@@ -55,6 +55,8 @@ grid.search.subset<-grid.search.full[x,]
 
 val_loss<-rep(NA,20)
 best_epoch_loss<-rep(NA,20)
+test_acc<-rep(NA,20)
+test_loss<-rep(NA,20)
 val_auc<-rep(NA,20)
 best_epoch_auc<-rep(NA,20)
 
@@ -137,11 +139,9 @@ for (i in 1:10){
     layer_dense(2, activation="sigmoid")
   
   model <- keras_model(inputs, outputs)
-  #model
-  #plot(model,show_shapes = T)
   
   model %>% compile(
-    optimizer =   optimizers$legacy$Adam(),
+    optimizer = optimizer_adam(),
     loss = loss_categorical_crossentropy,
     metrics = c("accuracy", tf$keras$metrics$AUC())
   )
@@ -236,11 +236,9 @@ for (i in 11:20){
     layer_dense(2, activation="sigmoid")
   
   model <- keras_model(inputs, outputs)
-  #model
-  #plot(model,show_shapes = T)
   
   model %>% compile(
-    optimizer =   optimizers$legacy$Adam(),
+    optimizer = optimizer_adam(),
     loss = loss_categorical_crossentropy,
     metrics = c("accuracy", tf$keras$metrics$AUC())
   )
@@ -262,9 +260,7 @@ for (i in 11:20){
 
 
 ## ---- Find the best parameters ----
-which(rowMeans(val_loss)==min(rowMeans(val_loss)))
-best_mean_val_loss=which(rowMeans(val_loss)==min(rowMeans(val_loss)))
-mean(val_loss[best_mean_val_loss[1],])
-mean(best_epoch_loss[best_mean_val_loss[1],])
+which(val_loss==min(val_loss))
+best_mean_val_loss=which(val_loss==min(val_loss))
 val_loss[best_mean_val_loss]      
 best_epoch_loss[best_mean_val_loss]
