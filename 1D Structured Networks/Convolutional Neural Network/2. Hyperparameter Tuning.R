@@ -1,4 +1,4 @@
-# Hyperparameter Tuning for ResNet
+# Hyperparameter Tuning for CNN
 
 ## ---- Libraries ----
 library(dplyr)
@@ -13,10 +13,10 @@ library(keras)
 filters <- c(2, 4, 8, 16)
 kernel_size <- c(3, 5, 7)
 batch_size <- c(100, 300, 500, 800, 1000, 1200, 1500)
-multipliers1 <-c(1,2)
-multipliers2 <-c(1,2)
-multipliers3 <-c(1,2)
-multipliers4 <-c(1,2)
+multipliers1 <-c(1,2) # remove
+multipliers2 <-c(1,2) # remove
+multipliers3 <-c(1,2) # remove
+multipliers4 <-c(1,2) # remove
 droprate1=c(0,0.1,0.15)
 droprate2=c(0,0.1,0.15)
 droprate3=c(0,0.1,0.15)
