@@ -33,6 +33,19 @@ add_batch_normalization <- function(input_layer, batch_normalization) {
   return(output_layer)
 }
 
+# for implementing early stopping
+callbacks <- list(
+  callback_early_stopping(
+    # Stop training when `val_loss` is no longer improving
+    monitor = "val_loss",
+    # "no longer improving" being defined as "no better than 1e-2 less"
+    min_delta = 1e-2,
+    # "no longer improving" being further defined as "for at least 2 epochs"
+    patience = 30,
+    verbose = 1
+  )
+)
+
 ## ---- Grid Search ----
 # create grid of parameter space we want to search
 filters <- c(16, 32, 64)
@@ -55,10 +68,9 @@ grid.search.subset<-grid.search.full[x,]
 
 val_loss<-rep(NA,20)
 best_epoch_loss<-rep(NA,20)
-test_acc<-rep(NA,20)
-test_loss<-rep(NA,20)
 val_auc<-rep(NA,20)
-best_epoch_auc<-rep(NA,20)
+
+optimizers <- keras::keras$optimizers
 
 ## ---- Run Search ----
 # Run in two groups for memory (faster this way)
@@ -141,7 +153,7 @@ for (i in 1:10){
   model <- keras_model(inputs, outputs)
   
   model %>% compile(
-    optimizer = optimizer_adam(),
+    optimizer = optimizers$legacy$Adam(1e-4),
     loss = loss_categorical_crossentropy,
     metrics = c("accuracy", tf$keras$metrics$AUC())
   )
@@ -152,13 +164,13 @@ for (i in 1:10){
     batch_size = grid.search.subset$batch_size[i],
     epochs = 100,
     validation_data = list(x_validate, dummy_y_val),
-    class_weight = list("0"=1,"1"=cw)
+    class_weight = list("0"=1,"1"=cw),
+    callbacks = callbacks
   )
   
   val_loss[i]<-min(resnet_history$metrics$val_loss)
   best_epoch_loss[i]<-which(resnet_history$metrics$val_loss==min(resnet_history$metrics$val_loss))
-  test_acc[i] <- evaluate(model, (x_test), dummy_y_test)[2]
-  test_loss[i] <- evaluate(model, (x_test), dummy_y_test)[1]
+  val_auc[i]<-resnet_history$metrics$val_auc[best_epoch_loss[i]]
 }
 
 
@@ -238,7 +250,7 @@ for (i in 11:20){
   model <- keras_model(inputs, outputs)
   
   model %>% compile(
-    optimizer = optimizer_adam(),
+    optimizer = optimizers$legacy$Adam(1e-4),
     loss = loss_categorical_crossentropy,
     metrics = c("accuracy", tf$keras$metrics$AUC())
   )
@@ -249,13 +261,13 @@ for (i in 11:20){
     batch_size = grid.search.subset$batch_size[i],
     epochs = 100,
     validation_data = list(x_validate, dummy_y_val),
-    class_weight = list("0"=1,"1"=cw)
+    class_weight = list("0"=1,"1"=cw),
+    callbacks = callbacks
   )
   
   val_loss[i]<-min(resnet_history$metrics$val_loss)
   best_epoch_loss[i]<-which(resnet_history$metrics$val_loss==min(resnet_history$metrics$val_loss))
-  test_acc[i] <- evaluate(model, (x_test), dummy_y_test)[2]
-  test_loss[i] <- evaluate(model, (x_test), dummy_y_test)[1]
+  val_auc[i]<-resnet_history$metrics$val_auc[best_epoch_loss[i]]
 }
 
 
