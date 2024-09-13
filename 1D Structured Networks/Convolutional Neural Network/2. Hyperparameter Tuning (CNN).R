@@ -17,12 +17,12 @@ multipliers1 <-c(1,2) # remove
 multipliers2 <-c(1,2) # remove
 multipliers3 <-c(1,2) # remove
 multipliers4 <-c(1,2) # remove
-droprate1=c(0,0.1,0.15)
-droprate2=c(0,0.1,0.15)
-droprate3=c(0,0.1,0.15)
-droprate4=c(0,0.1,0.15)
-droprate5=c(0,0.1,0.15)
-regularizer_weight <- c(0, 0.001,0.005,0.01)
+droprate1=c(0,0.1,0.15) # have the same dropout for each layer
+droprate2=c(0,0.1,0.15) # remove
+droprate3=c(0,0.1,0.15) # remove
+droprate4=c(0,0.1,0.15) # remove
+droprate5=c(0,0.1,0.15) # remove
+regularizer_weight <- c(0, 0.001,0.005,0.01) # probably remove this too 
 
 # expand the grid so that every possible combination of the above parameters is present. 
 # creating every possible combination to test
