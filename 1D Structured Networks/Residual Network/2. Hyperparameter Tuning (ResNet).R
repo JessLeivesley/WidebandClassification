@@ -42,7 +42,7 @@ callbacks <- list(
     min_delta = 1e-2,
     # "no longer improving" being further defined as "for at least 2 epochs"
     patience = 30,
-    verbose = 1
+    restore_best_weights = TRUE
   )
 )
 

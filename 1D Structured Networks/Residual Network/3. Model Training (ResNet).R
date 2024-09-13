@@ -6,29 +6,12 @@ library(tidymodels)
 library(tensorflow)
 library(caret)
 
-metrics<-data.frame(matrix(ncol = 4, nrow = 1))
-colnames(metrics)<-c('Test Loss', 'Sensitivity', 'Specificity', 'AUC')
+## ---- Train the final model ----
 
-resnet_history <- list()
+## Run Setup from "Hyperparameter Tuning (ResNet).R" 
 
-## ---- Fit the best model 5 times ----
-
-
-x_train_set<-x_train
-y_train_set<-dummy_y_train
-
-x_val_set<-x_validate
-y_val_set<-dummy_y_val
-
-cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
-
-x_train_set <- x_train_set[,1:249]
-x_val_set <- x_val_set[,1:249]
-
-# below need to be extracted and inputted as values so only need to change this line everytime we have new optimal values
-best_param=tibble(filters = 16, kernel_size = 5, leaky_relu = T, batch_normalization = F, batch_size = 1200)
-# best loss: 16, 5, t, f, 1200
-
+# These are the best parameters found 
+best_param=tibble(filters = 64, kernel_size = 3, leaky_relu = T, batch_normalization = F, batch_size = 500)
 
 input_shape <- c(249,1)
 set_random_seed(15)
@@ -102,20 +85,20 @@ outputs <- block_5_output %>%
 
 model <- keras_model(inputs, outputs)
 
-
 model %>% compile(
-  optimizer = optimizer_adam(),
+  optimizer = optimizers$legacy$Adam(1e-4),
   loss = loss_categorical_crossentropy,
   metrics = c("accuracy", tf$keras$metrics$AUC())
 )
 
-# Fit model (just resnet)
-resnet_history[[fold]] <- model %>% fit(
-  x_train_set, y_train_set[,c(1:2)],
+# Fit model
+resnet_history <- model %>% fit(
+  x_train, dummy_y_train,
   batch_size = best_param$batch_size,
-  epochs = 18,
-  validation_data = list(x_val_set, y_val_set[,c(1:2)]),
-  class_weight = list("0"=1,"1"=cw)
+  epochs = 100,
+  validation_data = list(x_validate, dummy_y_val),
+  class_weight = list("0"=1,"1"=cw),
+  callbacks = callbacks
 )
 
 eval <- evaluate(model, (x_test), dummy_y_test)
