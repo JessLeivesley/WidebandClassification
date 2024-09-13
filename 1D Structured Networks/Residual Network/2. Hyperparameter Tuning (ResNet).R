@@ -46,6 +46,10 @@ callbacks <- list(
   )
 )
 
+optimizers <- keras::keras$optimizers
+
+cw<-summary(as.factor(dummy_y_train[,1]))[2]/summary(as.factor(dummy_y_train[,1]))[1]
+
 ## ---- Grid Search ----
 # create grid of parameter space we want to search
 filters <- c(16, 32, 64)
@@ -70,12 +74,8 @@ val_loss<-rep(NA,20)
 best_epoch_loss<-rep(NA,20)
 val_auc<-rep(NA,20)
 
-optimizers <- keras::keras$optimizers
-
 ## ---- Run Search ----
 # Run in two groups for memory (faster this way)
-
-cw<-summary(as.factor(dummy_y_train[,1]))[2]/summary(as.factor(dummy_y_train[,1]))[1]
 
 for (i in 1:10){
   print(sprintf("Processing Model #%d", i))
