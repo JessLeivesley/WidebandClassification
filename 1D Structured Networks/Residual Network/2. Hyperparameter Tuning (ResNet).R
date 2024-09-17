@@ -36,18 +36,17 @@ add_batch_normalization <- function(input_layer, batch_normalization) {
 # for implementing early stopping
 callbacks <- list(
   callback_early_stopping(
-    # Stop training when `val_loss` is no longer improving
     monitor = "val_loss",
-    # "no longer improving" being defined as "no better than 1e-2 less"
     min_delta = 1e-2,
-    # "no longer improving" being further defined as "for at least 2 epochs"
     patience = 30,
     restore_best_weights = TRUE
   )
 )
 
+# for using legacy optimizers which work better with newer Macs
 optimizers <- keras::keras$optimizers
 
+# Class weight calculation to account for imbalanced data
 cw<-summary(as.factor(dummy_y_train[,1]))[2]/summary(as.factor(dummy_y_train[,1]))[1]
 
 ## ---- Grid Search ----
