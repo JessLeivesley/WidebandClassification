@@ -5,21 +5,12 @@ library(dplyr)
 library(tidymodels)
 library(tensorflow)
 
-## ---- Fit the best model 5 times ----
+## ---- Fit the best model ----
 
 # create a list to store each of the history in
-model_history<-list()
-
 best_param=tibble(regrate=0.00001, lstmunits=256, neuron1=128)
 
-for(fold in 1:5){
-x_train_set<-x_data_train[folds[[fold]],,]
-y_train_set<-dummy_y_train[folds[[fold]],]
-
-x_val_set<-x_data_train[-folds[[fold]],,]
-y_val_set<-dummy_y_train[-folds[[fold]],]
-
-cw<-summary(as.factor(y_train_set[,1]))[2]/summary(as.factor(y_train_set[,1]))[1]
+cw<-summary(as.factor(dummy_y_train[,1]))[2]/summary(as.factor(dummy_y_train[,1]))[1]
 
 set_random_seed(15)
 rnn = keras_model_sequential() # initialize model
@@ -40,12 +31,11 @@ rnn %>% compile(
   optimizer = optimizer_adam(3e-4),
   metrics = c('accuracy', tf$keras$metrics$AUC()))
 
-model_history[[fold]] <- rnn %>% fit(
-  x_train_set, y_train_set,
+model_history <- rnn %>% fit(
+  x_data_train, dummy_y_train,
   batch_size = 1000, 
   epochs = 50,
-  validation_data = list(x_val_set,y_val_set),
+  validation_data = list(x_data_val,dummy_y_val),
   class_weight = list("0"=1,"1"=cw))
-}
 
 ## evaluating the best model on test data ##
